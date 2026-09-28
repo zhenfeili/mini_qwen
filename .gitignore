@@ -1,0 +1,66 @@
+# ============================================================
+# mini_qwen .gitignore
+# 原则：大模型权重、大数据集、训练产物（单文件普遍远超 10M）一律不入库，
+#       仓库只保留代码、配置、文档，以及 mini_data/ 里用于跑通流程的小样本数据。
+# ============================================================
+
+# ---------- 训练产物与下载数据（本项目最大的体积来源） ----------
+# results/ 单个 checkpoint 约 5.7G（权重 1.9G + 优化器状态 3.8G）
+results/
+# data/ 为 prepare.sh 下载的数据集，单文件 78M~371M
+data/
+# 训练日志
+logs/
+output_*.log
+nohup.out
+
+# ---------- 模型权重与检查点（任意目录下，兜底规则） ----------
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.msgpack
+*.h5
+*.onnx
+*.gguf
+*.engine
+*.pkl
+
+# ---------- 大数据文件 ----------
+*.parquet
+*.arrow
+*.npy
+*.npz
+*.tfrecord
+*.jsonl
+# 例外：mini_data/ 是仓库自带的小样本数据（单文件 100K~425K），必须保留
+!mini_data/**/*.parquet
+
+# ---------- 压缩包 ----------
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.7z
+
+# ---------- 实验跟踪 ----------
+wandb/
+runs/
+events.out.tfevents.*
+
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# ---------- 编辑器与系统 ----------
+.vscode/
+.idea/
+.DS_Store
+
+# 旧仓库备份（mv .git git_bak 产生），不入库
+git_bak/
