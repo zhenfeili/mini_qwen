@@ -1,0 +1,33 @@
+# mini_qwen 依赖
+#
+# 下列版本是 2026-09 在单张 H200 上完整跑通 pt -> sft -> dpo -> eval 的实测组合。
+# 安装：pip install -r requirements.txt
+#
+# 版本下限说明（脚本用到的新版 API）：
+#   transformers >= 4.56  —— 需要 from_pretrained/from_config 的 dtype= 参数
+#                             （旧版叫 torch_dtype=，4.56 起改名）
+#   trl          >= 1.0   —— SFTTrainer/DPOTrainer 的 processing_class=、
+#                             SFTConfig.completion_only_loss、max_length 移入 config
+# 原项目要求的 trl==0.11.4 + transformers==4.45.0 与本仓库代码不兼容，
+# 迁移细节见 RUNBOOK.md 第 12 节。
+
+torch==2.10.0
+transformers==4.57.6
+trl==1.2.0
+datasets==4.8.4
+accelerate==1.13.0
+tokenizers==0.22.2
+matplotlib==3.11.2
+
+# 数据下载（从魔搭下载 BAAI 的三个数据集）
+modelscope==1.36.3
+
+# 加速注意力。需要先装好 torch 和 CUDA toolchain，且必须单独安装：
+#   pip install flash-attn --no-build-isolation
+# 显卡不支持时，把脚本里的 attn_implementation 改成 "sdpa" 即可，
+# eval 脚本可直接用 --attn sdpa。
+flash-attn==2.8.3
+
+# 多卡训练才需要（accelerate_config.yaml 配的是 DeepSpeed ZeRO-2）。
+# 单卡跑通本项目不需要，故默认注释掉。
+# deepspeed

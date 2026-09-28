@@ -1,5 +1,22 @@
 # mini_qwen
 
+> **本仓库是 [qiufengqijun/mini_qwen](https://github.com/qiufengqijun/mini_qwen) 的 fork。**
+>
+> 原项目的代码基于 `transformers 4.45` + `trl 0.11.4`（2024 年底），在新版依赖上会直接报错。
+> 本 fork 把四个脚本适配到了 `transformers 4.57` + `trl 1.2` + `torch 2.10`，
+> 并在**单张 GPU** 上完整跑通了 pt → sft → dpo → eval 全流程。
+>
+> 📖 **新人请先看 [RUNBOOK.md](RUNBOOK.md)** —— 环境、数据、复现命令、实测结果、踩坑记录都在那里。
+> 5 分钟验证环境是否就绪：
+>
+> ```bash
+> pip install -r requirements.txt
+> bash run.sh smoke
+> ```
+>
+> 本文件（README）保留原作者的完整实验记录与分析，内容真实可贵，但其中的
+> **依赖版本号、`demo/` 目录、部分命令已不适用于本 fork**，以 RUNBOOK.md 为准。
+
 ## 目录
 - [简介](#简介)
 - [快速开始](#快速开始)
@@ -27,28 +44,42 @@ mini_qwen是以Qwen2.5-0.5B-Instruct模型为基础，通过扩充模型隐藏�
 - https://github.com/huggingface/trl/issues [TRL使用过程中各种问题]
 
 ## 快速开始
-本项目构建了mini_data(通过utils/save_mini_data.py)，也下载了模型配置文件，如果只是体验模型训练流程，不需要额外下载数据集和模型，仅需要下载本项目到本地，然后运行预训练(pt)、微调(sft)和直接偏好优化(dpo)的demo_xx.py代码即可。  
-**注意：请确保安装以下python包：**  
-**pip install flash-attn**  
-**pip install trl==0.11.4**  
-**pip install transformers==4.45.0**   
+
+> ⚠️ 本节已按本 fork 更新。原作者的版本要求（`trl==0.11.4` / `transformers==4.45.0`）
+> 和 `demo/` 目录都已不适用：`demo/` 已删除，其"小规模跑通"的作用现由主脚本的
+> 环境变量开关承担，见 [RUNBOOK.md 第 8.1 节](RUNBOOK.md#81-环境变量开关)。
+
+仓库自带 `mini_data/`（约 1.8M，由 `utils/save_mini_data.py` 生成）和模型配置文件，
+**只想体验训练流程的话，不需要额外下载任何数据和模型权重**，clone 下来就能跑。
+
 ```bash
-# 下载本项目
-git clone https://github.com/qiufengqijun/mini_qwen.git
+git clone https://github.com/zhenfeili/mini_qwen.git
 cd mini_qwen
 
-# demo_xx.py和mini_qwen_xx.py基本一致，为了减少显存占用，进行了以下修改：
-# 在demo/demo_xx.py中， 将data/替换为mini_data/
-# 在demo/demo_xx.py中， 设置per_device_train_batch_size=1 gradient_accumulation_steps=1 logging_steps=1
-# 在demo/demo_pt.py中， 设置block_size = 128
-# 在demo/demo_sft.py中，设置max_seq_length=128
-# 在demo/demo_dpo.py中，设置max_length=128 max_prompt_length=64
+# 1. 装依赖
+pip install -r requirements.txt
+# flash-attn 需要单独装（要先有 torch 和 CUDA toolchain）
+pip install flash-attn --no-build-isolation
+# 显卡不支持 flash-attn 也没关系，把脚本里的 attn_implementation 改成 "sdpa" 即可
 
-# 参考run.sh中的“单卡在命令行运行”
-python demo/demo_pt.py
-python demo/demo_sft.py
-python demo/demo_dpo.py
+# 2. 用 mini_data 跑通 pt -> sft -> dpo，约 5 分钟
+bash run.sh smoke
 ```
+
+`smoke` 跑完会在 `/tmp/mini_qwen_smoke` 下生成三个阶段的模型。
+输出是乱码属正常现象——只训了几百条样本，这一步只验证环境和代码链路是否通。
+
+接下来用真实数据训练：
+
+```bash
+bash prepare.sh        # 下载数据集（可先只下子集，见 RUNBOOK 第 5 节）
+bash run.sh pt         # 预训练
+bash run.sh sft        # 微调
+bash run.sh dpo        # 直接偏好优化
+bash run.sh eval       # 交互式对话
+```
+
+单卡实测耗时与结果见 [RUNBOOK.md 第 9 节](RUNBOOK.md#9-训练结果)。
 
 ## 模型下载链接
 本项目将训练过程中的几乎所有模型都进行了保存，下载链接如下：
